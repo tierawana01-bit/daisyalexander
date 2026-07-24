@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Invitation</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Pinyon+Script&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Floating Page Decorations Layer -->
+    <div id="floating-decorations-container"></div>
+
+    <!-- Background Music Audio -->
+    <audio id="bg-music" loop preload="none">
+        <!-- Source is loaded dynamically from config.js -->
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Canvas for Daisy Petals Animation -->
+    <canvas id="petals-canvas"></canvas>
+
+    <!-- Floating Audio Control -->
+    <div class="audio-control-wrapper">
+        <div class="music-hint-badge" id="music-hint">🎵 Play Music</div>
+        <button id="music-toggle" aria-label="Toggle Music" class="music-btn">
+            <span class="disc-icon">💿</span>
+            <span class="music-wave">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+        </button>
+    </div>
+
+    <!-- Hero Section -->
+    <header class="hero-section" id="hero">
+        <div class="hero-bg" style="background-image: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url('assets/hero_bg.jpg');"></div>
+        <div class="hero-content">
+            <!-- Watercolor Daisy Bouquet Draggable Wrapper -->
+            <div class="daisy-icon-wrapper">
+                <div class="draggable-bouquet-container">
+                    <img src="assets/daisy_bouquet.jpg" alt="Daisy Bouquet" class="hero-bouquet-img">
+                    <div class="drag-handle-tooltip">Drag to Position</div>
+                </div>
+            </div>
+            <p class="hero-subtitle editor-target" id="hero-subtitle-el">THE WEDDING INVITATION OF</p>
+            <h1 class="hero-title editor-target" id="hero-title-el">Daisy &amp; Alexander</h1>
+            <p class="hero-date editor-target" id="hero-date-el">10.17.2026 • SATURDAY</p>
+            <p class="hero-location editor-target" id="hero-location-el">The Glasshouse at Daisy Farms</p>
+            <a href="#rsvp" class="btn btn-primary hero-btn">RSVP Now</a>
+        </div>
+        <div class="scroll-indicator">
+            <span>Scroll to Discover</span>
+            <div class="arrow-down"></div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <a href="#hero" class="nav-logo" id="nav-logo-el">D &amp; A</a>
+        <div class="nav-links">
+            <a href="#story" id="nav-link-story">Our Story</a>
+            <a href="#schedule" id="nav-link-schedule">The Big Day</a>
+            <a href="#details" id="nav-link-details">Details</a>
+            <a href="#countdown" id="nav-link-countdown">Countdown</a>
+            <a href="#rsvp" class="nav-rsvp-btn" id="nav-link-rsvp">RSVP</a>
+        </div>
+    </nav>
+
+    <!-- Parents of Bride & Groom Section -->
+    <section class="parents-section section-padding reveal-on-scroll" id="parents-section">
+        <div class="container text-center">
+            <span class="subtitle editor-target" id="parents-subtitle-el">WITH THE BLESSINGS OF OUR FAMILIES</span>
+            <h2 class="section-title editor-target" id="parents-title-el">Parents of the Bride &amp; Groom</h2>
+            <div class="decorative-divider">
+                <span class="divider-line"></span>
+                <span class="divider-icon">❦</span>
+                <span class="divider-line"></span>
+            </div>
+            
+            <div class="parents-grid">
+                <div class="parents-card">
+                    <div class="parents-badge">👰 Bride's Family</div>
+                    <h3 class="parents-label editor-target" id="bride-parents-label-el">Parents of the Bride</h3>
+                    <p class="parents-names editor-target" id="bride-parents-names-el">Mr. Arthur Alexander &amp; Mrs. Evelyn Alexander</p>
+                </div>
+                
+                <div class="parents-card">
+                    <div class="parents-badge">🤵 Groom's Family</div>
+                    <h3 class="parents-label editor-target" id="groom-parents-label-el">Parents of the Groom</h3>
+                    <p class="parents-names editor-target" id="groom-parents-names-el">Mr. William Daisy &amp; Mrs. Eleanor Daisy</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quote Section -->
+    <section class="quote-section reveal-on-scroll" id="quote-section">
+        <div class="container text-center">
+            <p class="quote-text editor-target" id="quote-text-el">"In all the world, there is no heart for me like yours. In all the world, there is no love for you like mine."</p>
+            <p class="quote-author editor-target" id="quote-author-el">— Maya Angelou</p>
+            <div class="quote-decor">
+                <img src="assets/daisy_bouquet.jpg" alt="Daisy Decor" class="quote-divider-img">
+            </div>
+        </div>
+    </section>
+
+    <!-- Our Story Section -->
+    <section class="story-section section-padding" id="story">
+        <!-- Elegant Border Frame -->
+        <div class="section-border"></div>
+
+        <!-- Background Daisy Watermarks (Dual side setup for floral richness) -->
+        <div class="section-watermark left">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <path d="M 67,78 C 76,78 81,72 83,68 C 76,72 69,76 67,78" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.3" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(120)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(150)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(180)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(210)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(240)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(270)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(300)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(330)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+        <div class="section-watermark right" style="transform: rotate(45deg); bottom: 15%; top: auto;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <path d="M 67,78 C 76,78 81,72 83,68 C 76,72 69,76 67,78" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.3" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(45)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(135)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(180)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(225)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(270)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(315)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+
+        <!-- Botanical Corner Ornaments -->
+        <div class="floral-corner top-left">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 0,0 Q 10,40 60,60 Q 80,70 120,80" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 30,12 Q 45,15 50,30 Q 35,27 30,12" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <path d="M 12,30 Q 15,45 30,50 Q 27,35 12,30" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <path d="M 50,45 Q 65,55 70,75 Q 55,65 50,45" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                    <circle cx="0" cy="-8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="0" cy="8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="-8" cy="0" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="8" cy="0" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="-6" cy="-6" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="6" cy="6" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="6" cy="-6" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="-6" cy="6" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                </g>
+                <g transform="translate(25, 25)">
+                    <circle cx="0" cy="0" r="3" fill="#E3A857" />
+                    <circle cx="0" cy="-6" r="2" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="0" cy="6" r="2" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="-6" cy="0" r="2" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="6" cy="0" r="2" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                </g>
+            </svg>
+        </div>
+        <div class="floral-corner bottom-right">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 0,0 Q 10,40 60,60 Q 80,70 120,80" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 30,12 Q 45,15 50,30 Q 35,27 30,12" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <path d="M 12,30 Q 15,45 30,50 Q 27,35 12,30" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <path d="M 50,45 Q 65,55 70,75 Q 55,65 50,45" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                    <circle cx="0" cy="-8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="0" cy="8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="-8" cy="0" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="8" cy="0" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="container">
+            <div class="section-header text-center reveal-on-scroll">
+                <span class="subtitle">Our Love Story</span>
+                <h2 class="section-title">Our Story</h2>
+                <!-- Watercolor Bouquet Divider -->
+                <div class="floral-divider-wrapper">
+                    <img src="assets/daisy_bouquet.jpg" alt="Daisy Divider" class="section-divider-img">
+                </div>
+            </div>
+            
+            <!-- Populated dynamically from config.js -->
+            <div class="story-timeline" id="story-timeline-container"></div>
+        </div>
+    </section>
+
+    <!-- The Big Day Itinerary Section -->
+    <section class="schedule-section section-padding" id="schedule">
+        <!-- Elegant Border Frame -->
+        <div class="section-border"></div>
+
+        <!-- Background Daisy Watermarks (Left and Right) -->
+        <div class="section-watermark left" style="transform: rotate(-15deg); top: 15%;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+        <div class="section-watermark right" style="transform: rotate(45deg); bottom: 15%;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <path d="M 67,78 C 76,78 81,72 83,68 C 76,72 69,76 67,78" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.3" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(120)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(150)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(180)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+
+        <!-- Botanical Corner Ornaments -->
+        <div class="floral-corner top-right">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 0,0 Q 10,40 60,60 Q 80,70 120,80" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 30,12 Q 45,15 50,30 Q 35,27 30,12" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                    <circle cx="0" cy="-8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="0" cy="8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="-8" cy="0" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="8" cy="0" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                </g>
+            </svg>
+        </div>
+        <div class="floral-corner bottom-left">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 30,12 Q 45,15 50,30 Q 35,27 30,12" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                    <circle cx="0" cy="-8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="0" cy="8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="container">
+            <div class="section-header text-center reveal-on-scroll">
+                <span class="subtitle">The Celebration Details</span>
+                <h2 class="section-title">The Big Day</h2>
+                <div class="floral-divider-wrapper">
+                    <img src="assets/daisy_bouquet.jpg" alt="Daisy Divider" class="section-divider-img">
+                </div>
+                <p class="section-desc">We can't wait to celebrate every moment of our wedding day with you. Here is what to expect.</p>
+            </div>
+
+            <!-- Populated dynamically from config.js -->
+            <div class="schedule-grid" id="schedule-grid-container"></div>
+
+            <div class="venue-info reveal-on-scroll editor-target" id="venue-info-card">
+                <div class="venue-details">
+                    <h3>The Venue</h3>
+                    <p class="venue-name" id="venue-name-el">The Glasshouse at Daisy Farms</p>
+                    <p id="venue-address-el">1288 Floral Valley Road, Meadowbrook</p>
+                    <p class="venue-note" id="venue-note-el">Valet parking is available at the entrance. The venue is fully accessible.</p>
+                    <a href="#" target="_blank" class="btn btn-secondary" id="venue-maps-el">Get Directions</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Details Section (Dress Code & Accommodations) -->
+    <section class="details-section section-padding" id="details">
+        <!-- Elegant Border Frame -->
+        <div class="section-border"></div>
+
+        <!-- Background Daisy Watermarks (Left and Right) -->
+        <div class="section-watermark left" style="transform: rotate(-30deg); top: 10%;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <path d="M 67,78 C 76,78 81,72 83,68 C 76,72 69,76 67,78" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.3" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+        <div class="section-watermark right" style="transform: rotate(15deg); bottom: 10%;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="floral-corner top-left">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 30,12 Q 45,15 50,30 Q 35,27 30,12" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                </g>
+            </svg>
+        </div>
+        <div class="floral-corner bottom-right">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="container">
+            <div class="section-header text-center reveal-on-scroll">
+                <span class="subtitle">Guest Information</span>
+                <h2 class="section-title">Details</h2>
+                <div class="floral-divider-wrapper">
+                    <img src="assets/daisy_bouquet.jpg" alt="Daisy Divider" class="section-divider-img">
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <!-- Dress Code Card -->
+                <div class="details-card reveal-on-scroll editor-target" id="card-dress-code">
+                    <div class="details-card-header">
+                        <span class="details-icon">👔</span>
+                        <h3>Dress Code</h3>
+                    </div>
+                    <p class="dress-style" id="dress-style-el">Garden Semi-Formal</p>
+                    <p class="dress-desc" id="dress-desc-el">We invite you to dress in warm garden colors to celebrate in harmony with our venue.</p>
+                    <div class="dress-colors" id="dress-colors-container"></div>
+                </div>
+
+                <!-- Accommodations Card -->
+                <div class="details-card reveal-on-scroll editor-target" id="card-accommodations">
+                    <div class="details-card-header">
+                        <span class="details-icon">🏨</span>
+                        <h3>Accommodations</h3>
+                    </div>
+                    <p class="accommodation-intro">Blocks of rooms are reserved at the following properties for our guests:</p>
+                    <div class="hotels-list" id="hotels-container"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Countdown Section -->
+    <section class="countdown-section section-padding" id="countdown">
+        <div class="container text-center">
+            <div class="section-header reveal-on-scroll">
+                <span class="subtitle">Counting the Moments</span>
+                <h2 class="section-title" id="countdown-title-el">Days Until We Say "I Do"</h2>
+                <div class="floral-divider-wrapper">
+                    <img src="assets/daisy_bouquet.jpg" alt="Daisy Divider" class="section-divider-img">
+                </div>
+            </div>
+            
+            <div class="countdown-container reveal-on-scroll">
+                <div class="countdown-item">
+                    <span class="count" id="days">00</span>
+                    <span class="label">Days</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="count" id="hours">00</span>
+                    <span class="label">Hours</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="count" id="minutes">00</span>
+                    <span class="label">Minutes</span>
+                </div>
+                <div class="countdown-item">
+                    <span class="count" id="seconds">00</span>
+                    <span class="label">Seconds</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RSVP Section -->
+    <section class="rsvp-section section-padding" id="rsvp">
+        <!-- Elegant Border Frame -->
+        <div class="section-border"></div>
+
+        <!-- Background Daisy Watermarks (Left and Right) -->
+        <div class="section-watermark left" style="transform: rotate(-10deg); top: 10%;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+        <div class="section-watermark right" style="transform: rotate(70deg); bottom: 10%;">
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <path d="M 67,78 C 76,78 81,72 83,68 C 76,72 69,76 67,78" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.3" />
+                <g transform="translate(60, 60)">
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(30)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(60)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(90)" />
+                    <ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(120)" />
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>
+        </div>
+
+        <!-- Botanical Corner Ornaments -->
+        <div class="floral-corner top-left">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <path d="M 30,12 Q 45,15 50,30 Q 35,27 30,12" fill="#E4ECE4" stroke="#BDCDBD" stroke-width="0.5" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                    <circle cx="0" cy="-8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                    <circle cx="0" cy="8" r="3" fill="#FCFAF7" stroke="#BDCDBD" stroke-width="0.3" />
+                </g>
+            </svg>
+        </div>
+        <div class="floral-corner bottom-right">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+                <path d="M 0,0 Q 40,10 60,60 Q 70,80 80,120" fill="none" stroke="#BDCDBD" stroke-width="1.2" />
+                <g transform="translate(60, 60)">
+                    <circle cx="0" cy="0" r="4.5" fill="#E3A857" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="container">
+            <div class="rsvp-wrapper reveal-on-scroll editor-target" id="rsvp-wrapper-card">
+                <div class="rsvp-header text-center">
+                    <span class="subtitle">Join Our Celebration</span>
+                    <h2 class="section-title">Kindly RSVP</h2>
+                    <p id="rsvp-deadline-el">Please kindly respond by September 1, 2026</p>
+                    <div class="floral-divider-wrapper">
+                        <img src="assets/daisy_bouquet.jpg" alt="Daisy Divider" class="section-divider-img">
+                    </div>
+                </div>
+
+                <!-- RSVP Form -->
+                <form id="rsvp-form" class="rsvp-form">
+                    <div class="form-row">
+                        <div class="form-group" style="width: 100%;">
+                            <label for="rsvp-name">Full Name</label>
+                            <input type="text" id="rsvp-name" name="name" placeholder="E.g., Jane Doe" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Will you be attending?</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="attending" value="yes" checked>
+                                <span class="radio-custom"></span>
+                                Joyfully Accept
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="attending" value="no">
+                                <span class="radio-custom"></span>
+                                Regretfully Decline
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group select-guests-wrapper">
+                        <label for="rsvp-guests">Number of Guests (including yourself)</label>
+                        <input type="number" id="rsvp-guests" name="guests" min="1" max="20" value="1" placeholder="Enter number of guests">
+                    </div>
+
+
+                    <button type="submit" class="btn btn-primary btn-block">Submit Response</button>
+                </form>
+
+                <!-- RSVP Success Message -->
+                <div id="rsvp-success" class="rsvp-success hidden">
+                    <div class="success-icon">🌸</div>
+                    <h3>Thank You!</h3>
+                    <p id="success-message">Your response has been received. We can't wait to celebrate with you!</p>
+                    <button id="edit-rsvp-btn" class="btn btn-secondary mt-4">Change Response</button>
+                </div>
+            </div>
+
+            <!-- RSVP Submission Completed -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <h2 class="footer-logo" id="footer-logo-el">D &amp; A</h2>
+            <p class="hashtag" id="footer-hashtag-el">#DaisyAndAlexander2026</p>
+            <p class="copyright">&copy; 2026 Daisy &amp; Alexander. Made with Love.</p>
+        </div>
+    </footer>
+
+    <!-- Creator Studio Slide-out Sidebar Panel -->
+    <div id="creator-sidebar" class="creator-sidebar hidden">
+        <div class="creator-header">
+            <h2>Creator Studio</h2>
+            <button id="close-creator-btn" class="close-btn" aria-label="Close Panel">&times;</button>
+        </div>
+        <div class="creator-body">
+            <p class="creator-intro">Customize every single aspect of your wedding invitation. Changes apply instantly.</p>
+            
+            <!-- Section: Layout Visibility Control -->
+            <div class="creator-section">
+                <h3>🧩 Page Layout &amp; Sections</h3>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-parents" checked>
+                        Show Bride &amp; Groom Parents
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-quote" checked>
+                        Show Love Quote
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-story" checked>
+                        Show Our Story Timeline
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-schedule" checked>
+                        Show The Big Day Itinerary
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-dress" checked>
+                        Show Suggested Dress Code
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-accommodations" checked>
+                        Show Accommodations Hotels
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-countdown" checked>
+                        Show Countdown Clock
+                    </label>
+                </div>
+                <div class="form-group-checkbox">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-sec-rsvp" checked>
+                        Show RSVP Response Form
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section: Couple & Date -->
+            <div class="creator-section" id="editor-section-couple">
+                <h3>🌸 Couple &amp; Date</h3>
+                <div class="form-group-sm">
+                    <label for="edit-bride">Bride's Name</label>
+                    <input type="text" id="edit-bride" placeholder="Bride's Name">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-groom">Groom's Name</label>
+                    <input type="text" id="edit-groom" placeholder="Groom's Name">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-hashtag">Hashtag</label>
+                    <input type="text" id="edit-hashtag" placeholder="#Hashtag">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-date-iso">Wedding Date (Countdown ISO)</label>
+                    <input type="text" id="edit-date-iso" placeholder="YYYY-MM-DDTHH:MM:SS">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-date-formatted">Wedding Date (Display Text)</label>
+                    <input type="text" id="edit-date-formatted" placeholder="Date Display Text">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-rsvp-deadline">RSVP Deadline</label>
+                    <input type="text" id="edit-rsvp-deadline" placeholder="RSVP Deadline Date">
+                </div>
+            </div>
+
+            <!-- Section: Flower Design Layout & Uploader -->
+            <div class="creator-section">
+                <h3>🌸 Draggable Flower &amp; Upload</h3>
+                <div class="form-group-sm">
+                    <label for="edit-upload-bouquet">Upload Custom Bouquet (PNG/JPG)</label>
+                    <input type="file" id="edit-upload-bouquet" accept="image/*">
+                    <small style="display: block; font-size: 0.75rem; color: #777; margin-top: 0.25rem;">PNGs with transparent backgrounds work best!</small>
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-bouquet-scale">Flower Scale (<span id="bouquet-scale-val">1.0</span>x)</label>
+                    <input type="range" id="edit-bouquet-scale" min="0.4" max="2.5" step="0.05" value="1.0">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-bouquet-x">Horizontal Position (X: <span id="bouquet-x-val">0</span>px)</label>
+                    <input type="range" id="edit-bouquet-x" min="-300" max="300" step="2" value="0">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-bouquet-y">Vertical Position (Y: <span id="bouquet-y-val">0</span>px)</label>
+                    <input type="range" id="edit-bouquet-y" min="-300" max="300" step="2" value="0">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-bouquet-rotate">Rotation (<span id="bouquet-rotate-val">0</span>&deg;)</label>
+                    <input type="range" id="edit-bouquet-rotate" min="-180" max="180" step="5" value="0">
+                </div>
+                <button type="button" id="reset-flower-pos-btn" class="btn btn-secondary btn-block btn-sm">Reset Flower Position</button>
+                
+                <!-- NEW Add Floating Decoration to Page -->
+                <div style="margin-top: 1.5rem; border-top: 1px solid rgba(189, 205, 189, 0.2); padding-top: 1.5rem;">
+                    <label for="edit-add-floating-img" class="btn btn-secondary btn-block btn-sm">➕ Add Decorative Image to Page</label>
+                    <input type="file" id="edit-add-floating-img" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Section: Bride & Groom Parents -->
+            <div class="creator-section" id="editor-section-parents">
+                <h3>👨‍👩‍👧‍👦 Bride &amp; Groom Parents</h3>
+                <div class="form-group-sm">
+                    <label for="edit-parents-subtitle">Section Subtitle</label>
+                    <input type="text" id="edit-parents-subtitle" placeholder="WITH THE BLESSINGS OF OUR FAMILIES">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-parents-title">Section Title</label>
+                    <input type="text" id="edit-parents-title" placeholder="Parents of the Bride &amp; Groom">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-bride-parents-label">Bride Parents Label</label>
+                    <input type="text" id="edit-bride-parents-label" placeholder="Parents of the Bride">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-bride-parents-names">Bride Parents Names</label>
+                    <input type="text" id="edit-bride-parents-names" placeholder="Mr. Arthur Alexander &amp; Mrs. Evelyn Alexander">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-groom-parents-label">Groom Parents Label</label>
+                    <input type="text" id="edit-groom-parents-label" placeholder="Parents of the Groom">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-groom-parents-names">Groom Parents Names</label>
+                    <input type="text" id="edit-groom-parents-names" placeholder="Mr. William Daisy &amp; Mrs. Eleanor Daisy">
+                </div>
+            </div>
+
+            <!-- Section: Romantic Quote -->
+            <div class="creator-section" id="editor-section-quote">
+                <h3>📖 Romantic Quote</h3>
+                <div class="form-group-sm">
+                    <label for="edit-quote-text">Quote Text</label>
+                    <textarea id="edit-quote-text" rows="3" placeholder="Enter a beautiful quote..."></textarea>
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-quote-author">Quote Author</label>
+                    <input type="text" id="edit-quote-author" placeholder="Author name">
+                </div>
+            </div>
+
+            <!-- Section: Venue -->
+            <div class="creator-section" id="editor-section-venue">
+                <h3>📍 Venue Details</h3>
+                <div class="form-group-sm">
+                    <label for="edit-venue-name">Venue Name</label>
+                    <input type="text" id="edit-venue-name" placeholder="Venue Name">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-venue-address">Address</label>
+                    <input type="text" id="edit-venue-address" placeholder="Venue Address">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-venue-note">Note</label>
+                    <input type="text" id="edit-venue-note" placeholder="Venue note details">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-venue-maps">Google Maps URL</label>
+                    <input type="text" id="edit-venue-maps" placeholder="Maps Link URL">
+                </div>
+            </div>
+
+            <!-- Section: Dress Code & Colors -->
+            <div class="creator-section" id="editor-section-dress">
+                <h3>👔 Dress Code &amp; Suggested Colors</h3>
+                <div class="form-group-sm">
+                    <label for="edit-dress-style">Dress Code Title</label>
+                    <input type="text" id="edit-dress-style" placeholder="E.g., Garden Semi-Formal">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-dress-desc">Description</label>
+                    <textarea id="edit-dress-desc" rows="2" placeholder="Describe suggested attire..."></textarea>
+                </div>
+                <div class="form-group-sm">
+                    <label>Suggested Swatch Colors</label>
+                    <div id="editor-dress-colors-list" class="editor-nested-list"></div>
+                    <button type="button" id="add-dress-color-btn" class="btn btn-secondary btn-block btn-sm mt-2">+ Add Suggested Color</button>
+                </div>
+            </div>
+
+            <!-- Section: Our Story Timeline -->
+            <div class="creator-section" id="editor-section-story">
+                <h3>📜 Our Story Timeline</h3>
+                <div id="editor-story-list" class="editor-nested-list"></div>
+                <button type="button" id="add-story-event-btn" class="btn btn-secondary btn-block btn-sm mt-2">+ Add Story Event</button>
+            </div>
+
+            <!-- Section: Big Day Itinerary -->
+            <div class="creator-section" id="editor-section-schedule">
+                <h3>⏰ The Big Day Itinerary</h3>
+                <div id="editor-schedule-list" class="editor-nested-list"></div>
+                <button type="button" id="add-schedule-item-btn" class="btn btn-secondary btn-block btn-sm mt-2">+ Add Itinerary Item</button>
+            </div>
+
+            <!-- Section: Accommodations -->
+            <div class="creator-section" id="editor-section-accommodations">
+                <h3>🏨 Accommodations Hotel Listings</h3>
+                <div id="editor-accommodations-list" class="editor-nested-list"></div>
+                <button type="button" id="add-accommodation-btn" class="btn btn-secondary btn-block btn-sm mt-2">+ Add Hotel</button>
+            </div>
+
+            <!-- Section: Theme & Styling -->
+            <div class="creator-section">
+                <h3>🎨 Theme Layout Colors</h3>
+                <div class="color-grid">
+                    <div class="color-picker-group">
+                        <label for="edit-color-cream">Background</label>
+                        <input type="color" id="edit-color-cream">
+                    </div>
+                    <div class="color-picker-group">
+                        <label for="edit-color-sage-light">Sage Light</label>
+                        <input type="color" id="edit-color-sage-light">
+                    </div>
+                    <div class="color-picker-group">
+                        <label for="edit-color-sage-med">Sage Medium</label>
+                        <input type="color" id="edit-color-sage-med">
+                    </div>
+                    <div class="color-picker-group">
+                        <label for="edit-color-forest">Forest Green</label>
+                        <input type="color" id="edit-color-forest">
+                    </div>
+                    <div class="color-picker-group">
+                        <label for="edit-color-gold">Gold Accent</label>
+                        <input type="color" id="edit-color-gold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Music & Effects -->
+            <div class="creator-section">
+                <h3>🎵 Media, Text Size &amp; Visuals</h3>
+                <div class="form-group-sm">
+                    <label for="edit-text-scale">Text &amp; Font Size (<span id="text-scale-val">100</span>%)</label>
+                    <input type="range" id="edit-text-scale" min="80" max="140" step="5" value="100">
+                </div>
+                <div class="form-group-sm">
+                    <label for="edit-music-url">Background Music Link or File</label>
+                    <input type="text" id="edit-music-url" placeholder="Direct MP3 Link">
+                    <div style="margin-top: 0.5rem;">
+                        <label for="edit-upload-music" class="btn btn-secondary btn-block btn-sm" style="font-size: 0.8rem; cursor: pointer; text-align: center; display: block;">🎵 Upload Custom MP3 File</label>
+                        <input type="file" id="edit-upload-music" accept="audio/*" style="display: none;">
+                    </div>
+                </div>
+            <!-- Section: Google Sheets Auto-Sync -->
+            <div class="creator-section">
+                <h3>📊 Google Sheets Auto-Sync</h3>
+                <div class="form-group-sm">
+                    <label for="edit-google-sheets-url">Google Apps Script / Webhook URL</label>
+                    <input type="text" id="edit-google-sheets-url" placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
+                <button type="button" id="test-google-sheets-btn" class="btn btn-secondary btn-block btn-sm">🧪 Test Google Sheets Connection</button>
+                <button type="button" id="toggle-sheets-guide-btn" class="btn btn-text mt-2" style="font-size: 0.8rem; color: var(--color-forest); text-decoration: underline; width: 100%;">📋 View 1-Click Setup Instructions &amp; Code</button>
+                
+                <div id="sheets-guide-box" class="hidden" style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.75); border-radius: 8px; border: 1px solid var(--color-sage-medium); font-size: 0.8rem; line-height: 1.5;">
+                    <strong>How to connect a Google Sheet (Free 2-min setup):</strong>
+                    <ol style="margin-left: 1.2rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">
+                        <li>Create a new Google Sheet &amp; click <code>Extensions &gt; Apps Script</code>.</li>
+                        <li>Delete any existing text and paste the script below:</li>
+                    </ol>
+                    <textarea id="google-apps-script-code" readonly rows="18" style="width: 100%; font-family: monospace; font-size: 0.75rem; padding: 0.5rem; background: #2C3E2F; color: #FCFAF7; border-radius: 4px; border: none; resize: vertical;">function doGet(e) {
+  return ContentService.createTextOutput("✅ Google Sheets RSVP Sync is Active!");
+}
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  // 1. Auto-create 4-column Header Row on empty sheet
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Date & Time", "Guest Name", "Attending Status", "Guests in Party"]);
+    sheet.getRange(1, 1, 1, 4)
+         .setFontWeight("bold")
+         .setBackground("#1E382B")
+         .setFontColor("#FFFFFF")
+         .setHorizontalAlignment("left");
+  }
+
+  var data = {};
+  try {
+    data = JSON.parse(e.postData.contents);
+  } catch(err) {
+    data = e.parameter || {};
+  }
+
+  var guestName = (data.name || "").toString().trim();
+  var nameToFind = guestName.toLowerCase();
+  var attendingStatus = data.attendingStatus || "Joyfully Accept";
+  var partySize = (attendingStatus.toLowerCase().indexOf("accept") !== -1 || attendingStatus.toLowerCase().indexOf("yes") !== -1) 
+                  ? (Number(data.guests) || 1) 
+                  : 0;
+
+  // 2. Remove ALL existing "Total Guest" summary rows if present (cleans up any old duplicates)
+  var values = sheet.getDataRange().getValues();
+  for (var r = values.length - 1; r >= 1; r--) {
+    var colC = (values[r][2] || "").toString().trim().toLowerCase();
+    if (colC.indexOf("total guest") !== -1 || colC.indexOf("total") !== -1) {
+      sheet.deleteRow(r + 1);
+    }
+  }
+
+  // Refresh data values after cleaning summary rows
+  values = sheet.getDataRange().getValues();
+
+  // 3. Search if guest name already exists to update row, or add new
+  var existingRowIndex = -1;
+  for (var i = 1; i < values.length; i++) {
+    var existingName = (values[i][1] || "").toString().trim().toLowerCase();
+    if (existingName && existingName === nameToFind) {
+      existingRowIndex = i + 1;
+      break;
+    }
+  }
+
+  var rowData = [
+    data.timestamp || new Date().toLocaleString(),
+    guestName || "N/A",
+    attendingStatus,
+    partySize
+  ];
+
+  if (existingRowIndex > -1) {
+    sheet.getRange(existingRowIndex, 1, 1, 4).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+
+  // 4. Calculate Total Guest count across all attending rows
+  var allData = sheet.getDataRange().getValues();
+  var totalGuests = 0;
+  for (var j = 1; j < allData.length; j++) {
+    var status = (allData[j][2] || "").toString().toLowerCase();
+    if (status.indexOf("accept") !== -1 || status.indexOf("yes") !== -1) {
+      totalGuests += Number(allData[j][3]) || 0;
+    }
+  }
+
+  // 5. Append ONE clean Summary Row at the bottom: "Total Guest | 44"
+  sheet.appendRow(["", "", "Total Guest", totalGuests]);
+  var newLastRow = sheet.getLastRow();
+  
+  sheet.getRange(newLastRow, 1, 1, 4).setFontWeight("bold");
+  sheet.getRange(newLastRow, 3).setHorizontalAlignment("right");
+  sheet.getRange(newLastRow, 4).setHorizontalAlignment("right");
+
+  // 6. Apply solid black grid borders to all cells
+  sheet.getRange(1, 1, newLastRow, 4)
+       .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+
+  return ContentService.createTextOutput(JSON.stringify({ status: "success", totalGuests: totalGuests }))
+                       .setMimeType(ContentService.MimeType.JSON);
+}</textarea>
+                    <ol start="3" style="margin-left: 1.2rem; margin-top: 0.5rem;">
+                        <li>Click <strong>Deploy &gt; New deployment</strong>.</li>
+                        <li>Select <strong>Web app</strong>, set <em>Who has access</em> to <strong>Anyone</strong>, and click <strong>Deploy</strong>.</li>
+                        <li>Copy the Web App URL and paste it into the input box above!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <div class="creator-footer">
+            <div id="save-status-msg" class="hidden" style="margin-bottom: 0.75rem; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-align: center; transition: all 0.3s ease;"></div>
+            <button id="publish-live-btn" class="btn btn-primary btn-block" style="background-color: var(--color-gold);">💾 Save &amp; Go Live</button>
+            <button id="save-config-btn" class="btn btn-secondary btn-block mt-2" style="font-size: 0.8rem; padding: 0.8rem 1.5rem;">Save Browser Cache</button>
+            <button id="export-config-btn" class="btn btn-secondary btn-block mt-2" style="font-size: 0.8rem; padding: 0.8rem 1.5rem;">Export config.js File</button>
+            <button type="button" id="restore-elements-btn" class="btn btn-secondary btn-block btn-sm mt-2">Restore Deleted Elements</button>
+            <button id="lock-creator-btn" class="btn btn-text mt-2" style="color: var(--color-danger); width: 100%; text-align: center; font-size: 0.8rem;">Lock Creator Mode (Logout)</button>
+            <button id="reset-config-btn" class="btn btn-text mt-2" style="color: var(--color-danger); width: 100%; text-align: center;">Reset to Defaults</button>
+        </div>
+    </div>
+
+
+
+    <!-- Secret Passcode Entry Modal (Hidden by default) -->
+    <div id="passcode-modal" class="hidden">
+        <div class="passcode-modal-content">
+            <span id="close-passcode-modal" class="close-btn">&times;</span>
+            <h3>Enter Creator Password</h3>
+            <p>Provide the passcode to unlock invitation layout edit tools.</p>
+            <input type="password" id="passcode-input" placeholder="Enter password">
+            <button id="submit-passcode-btn" class="btn btn-primary btn-block">Unlock Creator Mode</button>
+            <p id="passcode-error" class="hidden" style="color: var(--color-danger); font-size: 0.85rem; margin-top: 0.75rem; font-weight: 500;">Incorrect password. Please try again!</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="creator-toast" class="creator-toast hidden">
+        <span id="creator-toast-icon">✅</span>
+        <span id="creator-toast-msg">Changes saved successfully!</span>
+    </div>
+
+    <!-- JavaScript Configuration & App Logic -->
+    <script src="config.js?v=20260724_v190"></script>
+    <script src="app.js?v=20260724_v190"></script>
+</body>
+</html>
