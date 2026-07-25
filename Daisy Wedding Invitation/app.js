@@ -115,17 +115,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     })();
 
-    // Creator trigger button — only visible after password unlock
+    // Creator trigger button — always visible for instant editing
     const creatorTrigger = document.querySelector('.creator-trigger-wrapper');
-    const isUnlocked = localStorage.getItem('daisy_creator_unlocked') === 'true';
     if (creatorTrigger) {
-        if (isUnlocked) {
-            creatorTrigger.style.display = 'block';
-            creatorTrigger.classList.remove('hidden');
-        } else {
-            creatorTrigger.style.display = 'none';
-            creatorTrigger.classList.add('hidden');
-        }
+        creatorTrigger.style.display = 'block';
+        creatorTrigger.classList.remove('hidden');
     }
     
     // Toast Notification Banner Helper
@@ -3302,12 +3296,7 @@ window.weddingConfig = ${JSON.stringify(exportObj, null, 4)};
         }
 
         if (isHidden) {
-            const isUnlocked = localStorage.getItem('daisy_creator_unlocked') === 'true';
-            if (isUnlocked) {
-                if (typeof openCreatorStudioSidebar === 'function') openCreatorStudioSidebar();
-            } else {
-                if (typeof showPasscodeModal === 'function') showPasscodeModal();
-            }
+            if (typeof openCreatorStudioSidebar === 'function') openCreatorStudioSidebar();
         } else {
             if (typeof closeCreatorStudioSidebar === 'function') closeCreatorStudioSidebar();
         }
