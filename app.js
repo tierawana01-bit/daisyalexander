@@ -115,11 +115,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     })();
 
-    // Creator trigger button — always visible for instant editing
+    // Creator trigger button — hidden by default
     const creatorTrigger = document.querySelector('.creator-trigger-wrapper');
+    const urlParams = new URLSearchParams(window.location.search);
+    const showEditBtn = urlParams.has('edit') || urlParams.has('key') || localStorage.getItem('show_edit_btn') === 'true';
     if (creatorTrigger) {
-        creatorTrigger.style.display = 'block';
-        creatorTrigger.classList.remove('hidden');
+        if (showEditBtn) {
+            creatorTrigger.style.display = 'block';
+            creatorTrigger.classList.remove('hidden');
+        } else {
+            creatorTrigger.style.display = 'none';
+            creatorTrigger.classList.add('hidden');
+        }
     }
     
     // Toast Notification Banner Helper
