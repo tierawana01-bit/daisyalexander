@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF7FC"/>
+      <stop offset="40%" stop-color="#EFE7F8"/>
+      <stop offset="80%" stop-color="#E3D7F3"/>
+      <stop offset="100%" stop-color="#D5C4EC"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#EAE0F5" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D8C8EE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="80%" stop-color="#2D1F3D" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#1F132C" stop-opacity="0.5"/>
+    </radialGradient>
+    <filter id="paperNoise">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise"/>
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.04 0"/>
+      <feBlend in="SourceGraphic" in2="noise" mode="multiply"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base Gradient -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+  <rect width="1920" height="1080" fill="url(#sunGlow)"/>
+
+  <!-- Soft Watercolor Splashes -->
+  <g opacity="0.45" filter="blur(40px)">
+    <circle cx="200" cy="180" r="320" fill="#9B82C3"/>
+    <circle cx="1720" cy="220" r="380" fill="#B6A6D6"/>
+    <circle cx="350" cy="900" r="400" fill="#A892D0"/>
+    <circle cx="1600" cy="850" r="350" fill="#9279B9"/>
+  </g>
+
+  <!-- Decorative French Lavender Stems & Botanical Silhouettes -->
+  <g opacity="0.18" fill="#352C42">
+    <!-- Left Botanical Sprigs -->
+    <path d="M 60 1080 Q 120 700 180 350 M 180 350 Q 190 320 200 280 M 180 350 Q 160 380 140 420 M 175 450 Q 145 470 120 500" stroke="#352C42" stroke-width="4" fill="none"/>
+    <ellipse cx="200" cy="280" rx="14" ry="24" transform="rotate(-15 200 280)"/>
+    <ellipse cx="190" cy="310" rx="12" ry="20" transform="rotate(-10 190 310)"/>
+    <ellipse cx="180" cy="340" rx="13" ry="22" transform="rotate(-20 180 340)"/>
+    <ellipse cx="170" cy="370" rx="11" ry="18"/>
+    
+    <path d="M 160 1080 Q 240 650 320 200" stroke="#352C42" stroke-width="3.5" fill="none"/>
+    <ellipse cx="320" cy="200" rx="12" ry="22" transform="rotate(15 320 200)"/>
+    <ellipse cx="310" cy="230" rx="11" ry="19" transform="rotate(10 310 230)"/>
+    <ellipse cx="300" cy="260" rx="13" ry="21" transform="rotate(20 300 260)"/>
+
+    <!-- Right Botanical Sprigs -->
+    <path d="M 1860 1080 Q 1800 700 1740 350" stroke="#352C42" stroke-width="4" fill="none"/>
+    <ellipse cx="1740" cy="350" rx="14" ry="24" transform="rotate(15 1740 350)"/>
+    <ellipse cx="1750" cy="380" rx="12" ry="20" transform="rotate(10 1750 380)"/>
+    
+    <path d="M 1760 1080 Q 1680 650 1600 220" stroke="#352C42" stroke-width="3.5" fill="none"/>
+    <ellipse cx="1600" cy="220" rx="12" ry="22" transform="rotate(-15 1600 220)"/>
+  </g>
+
+  <!-- Paper Texture Overlay & Dark Vignette -->
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+  <rect width="1920" height="1080" fill="#000" opacity="0.02" filter="url(#paperNoise)"/>
+</svg>

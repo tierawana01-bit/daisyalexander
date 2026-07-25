@@ -16,27 +16,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeConfig = { ...defaultConfig };
 
     // Helper: deep-merge a parsed config object over the default
-    function mergeConfig(parsed) {
+    function mergeConfig(parsed, baseConfig = defaultConfig) {
+        if (!parsed) return { ...baseConfig };
         return {
-            ...defaultConfig,
+            ...baseConfig,
             ...parsed,
-            sections: { ...defaultConfig.sections, ...parsed.sections },
-            parents: { ...(defaultConfig.parents || {}), ...(parsed.parents || {}) },
-            venue: { ...defaultConfig.venue, ...parsed.venue },
-            colors: { ...defaultConfig.colors, ...parsed.colors },
-            loveQuote: { ...defaultConfig.loveQuote, ...parsed.loveQuote },
-            dressCode: { ...defaultConfig.dressCode, ...parsed.dressCode },
+            theme: parsed.theme || baseConfig.theme || 'daisy',
+            sections: { ...(baseConfig.sections || {}), ...(parsed.sections || {}) },
+            parents: { ...(baseConfig.parents || {}), ...(parsed.parents || {}) },
+            venue: { ...(baseConfig.venue || {}), ...(parsed.venue || {}) },
+            colors: { ...(baseConfig.colors || {}), ...(parsed.colors || {}) },
+            themeColors: { ...(baseConfig.themeColors || {}), ...(parsed.themeColors || {}) },
+            themeBouquets: { ...(baseConfig.themeBouquets || {}), ...(parsed.themeBouquets || {}) },
+            themeHeroBgs: { ...(baseConfig.themeHeroBgs || {}), ...(parsed.themeHeroBgs || {}) },
+            themeHeroMobileBgs: { ...(baseConfig.themeHeroMobileBgs || {}), ...(parsed.themeHeroMobileBgs || {}) },
+            loveQuote: { ...(baseConfig.loveQuote || {}), ...(parsed.loveQuote || {}) },
+            dressCode: { ...(baseConfig.dressCode || {}), ...(parsed.dressCode || {}) },
             design: {
-                ...defaultConfig.design,
-                ...parsed.design,
-                heroBouquetStyle: { ...(defaultConfig.design?.heroBouquetStyle || { x: 0, y: 0, scale: 1.0, rotate: 0 }), ...(parsed.design?.heroBouquetStyle || {}) },
-                overrides: { ...(defaultConfig.design?.overrides || {}), ...(parsed.design?.overrides || {}) },
-                textOverrides: { ...(defaultConfig.design?.textOverrides || {}), ...(parsed.design?.textOverrides || {}) },
-                floatingImages: parsed.design?.floatingImages || defaultConfig.design?.floatingImages || []
+                ...(baseConfig.design || {}),
+                ...(parsed.design || {}),
+                heroBouquetUrl: parsed.design?.heroBouquetUrl || baseConfig.design?.heroBouquetUrl,
+                heroBgUrl: parsed.design?.heroBgUrl || baseConfig.design?.heroBgUrl,
+                heroBgMobileUrl: parsed.design?.heroBgMobileUrl || baseConfig.design?.heroBgMobileUrl,
+                heroBouquetStyle: { ...(baseConfig.design?.heroBouquetStyle || { x: 0, y: 0, scale: 1.0, rotate: 0 }), ...(parsed.design?.heroBouquetStyle || {}) },
+                overrides: { ...(baseConfig.design?.overrides || {}), ...(parsed.design?.overrides || {}) },
+                textOverrides: { ...(baseConfig.design?.textOverrides || {}), ...(parsed.design?.textOverrides || {}) },
+                floatingImages: parsed.design?.floatingImages || baseConfig.design?.floatingImages || []
             },
-            story: parsed.story || defaultConfig.story,
-            schedule: parsed.schedule || defaultConfig.schedule,
-            accommodations: parsed.accommodations || defaultConfig.accommodations
+            story: parsed.story || baseConfig.story,
+            schedule: parsed.schedule || baseConfig.schedule,
+            accommodations: parsed.accommodations || baseConfig.accommodations
         };
     }
 
@@ -64,11 +73,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (storedConfig) {
         try {
             const parsed = JSON.parse(storedConfig);
-            activeConfig = mergeConfig(parsed);
-            console.log('Merged cached creator design for instant first paint.');
+            activeConfig = mergeConfig(parsed, defaultConfig);
+            console.log('Loaded user creator design from localStorage.');
         } catch (e) {
             console.error('Error parsing saved design config, using defaults:', e);
+            activeConfig = mergeConfig(defaultConfig);
         }
+    } else {
+        activeConfig = mergeConfig(defaultConfig);
     }
 
     // Apply immediate UI render (<50ms) without waiting for network
@@ -76,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof renderDynamicElements === 'function') renderDynamicElements(activeConfig);
     if (typeof applySectionVisibility === 'function') applySectionVisibility(activeConfig.sections);
 
-    // 2. Non-blocking Asynchronous Cloud Hydration from Supabase
+    // 2. Non-blocking Asynchronous Cloud Hydration from Supabase (hydrates if no local edits exist)
     (async () => {
         try {
             const cloudResp = await fetch(`${SUPABASE_URL}/rest/v1/wedding_config?id=eq.${SITE_ID}&select=config`, {
@@ -88,12 +100,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cloudResp.ok) {
                 const rows = await cloudResp.json();
                 if (rows && rows.length > 0 && rows[0].config && rows[0].config.brideName) {
-                    activeConfig = mergeConfig(rows[0].config);
-                    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(activeConfig)); } catch (e) {}
-                    if (typeof applyThemeColors === 'function') applyThemeColors(activeConfig.colors);
-                    if (typeof renderDynamicElements === 'function') renderDynamicElements(activeConfig);
-                    if (typeof applySectionVisibility === 'function') applySectionVisibility(activeConfig.sections);
-                    console.log(`Hydrated design config from Supabase Cloud (${SITE_ID})!`);
+                    if (!storedConfig) {
+                        activeConfig = mergeConfig(rows[0].config, defaultConfig);
+                        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(activeConfig)); } catch (e) {}
+                        if (typeof applyThemeColors === 'function') applyThemeColors(activeConfig.colors);
+                        if (typeof renderDynamicElements === 'function') renderDynamicElements(activeConfig);
+                        if (typeof applySectionVisibility === 'function') applySectionVisibility(activeConfig.sections);
+                        console.log(`Hydrated design config from Supabase Cloud (${SITE_ID})!`);
+                    }
                 }
             }
         } catch (e) {
@@ -151,13 +165,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return clean;
     }
 
-    // Helper: strip massive Data URLs (>50KB) for browser localStorage quota safety
+    // Helper: Safe config cloning for storage (preserves user uploaded images intact)
     function createCleanConfigForStorage(cfg) {
         if (!cfg) return {};
         try {
-            const str = JSON.stringify(cfg);
-            const cleanedStr = str.replace(/data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]{50000,}/g, 'assets/daisy_bouquet.jpg');
-            return JSON.parse(cleanedStr);
+            return JSON.parse(JSON.stringify(cfg));
         } catch (e) {
             return cfg;
         }
@@ -210,6 +222,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (colors.sageMedium) root.style.setProperty('--color-sage-medium', colors.sageMedium);
         if (colors.forest) root.style.setProperty('--color-forest', colors.forest);
         if (colors.gold) root.style.setProperty('--color-gold', colors.gold);
+
+        // Text colours (custom overrides)
+        if (colors.textHeroNames) root.style.setProperty('--color-text-hero-names', colors.textHeroNames);
+        if (colors.textHeroSub)   root.style.setProperty('--color-text-hero-sub',   colors.textHeroSub);
+        if (colors.textHeadings)  root.style.setProperty('--color-text-headings',   colors.textHeadings);
+        if (colors.textBody)      root.style.setProperty('--color-text-body',        colors.textBody);
+        if (colors.textNav)       root.style.setProperty('--color-text-nav',         colors.textNav);
+        if (colors.textFooter)    root.style.setProperty('--color-text-footer',      colors.textFooter);
     }
 
     // Toggle sections visibility dynamically
@@ -418,6 +438,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Apply design image and positioning styles
     function applyDesignStyles() {
+        const heroBg = document.querySelector('.hero-bg');
+        if (heroBg) {
+            const currentTheme = activeConfig.theme || 'daisy';
+            const themeDef = (window.weddingThemes && window.weddingThemes[currentTheme]) || window.weddingThemes?.daisy;
+            const isMobile = window.innerWidth <= 900 || window.matchMedia('(max-width: 900px)').matches;
+
+            const desktopUrl = activeConfig.design?.heroBgUrl || themeDef?.heroBgUrl || 'assets/hero_bg.jpg';
+            const mobileUrl = activeConfig.design?.heroBgMobileUrl || desktopUrl;
+            const targetBgUrl = isMobile ? mobileUrl : desktopUrl;
+
+            heroBg.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url('${targetBgUrl}')`;
+        }
+
+        if (typeof applyThemeWatermarks === 'function') {
+            applyThemeWatermarks(activeConfig.theme || 'daisy');
+        }
+
         const bouquet = document.querySelector('.hero-bouquet-img');
         if (bouquet) {
             if (activeConfig.design && activeConfig.design.heroBouquetUrl) {
@@ -438,6 +475,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             processImageTransparency(el);
         });
+
+        window.addEventListener('resize', applyDesignStyles);
 
         // Clean styles of all targets before applying overrides (to avoid leftover values if state resets)
         document.querySelectorAll('.editor-target').forEach(el => {
@@ -658,6 +697,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             this.angleSpeed = Math.random() * 0.015 - 0.0075;
             this.windFrequency = Math.random() * 0.015;
             this.windOffset = Math.random() * 100;
+            this.colorSeed = Math.floor(Math.random() * 10);
+            this.opacity = Math.random() * 0.25 + 0.75;
         }
 
         update() {
@@ -682,19 +723,104 @@ document.addEventListener('DOMContentLoaded', async () => {
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
 
-            ctx.beginPath();
-            ctx.ellipse(0, 0, this.size * this.aspectRatio, this.size, 0, 0, Math.PI * 2);
-            ctx.shadowColor = 'rgba(44, 62, 47, 0.04)';
-            ctx.shadowBlur = 4;
-            ctx.fillStyle = 'rgba(250, 248, 245, 0.9)';
-            ctx.fill();
+            const themeKey = activeConfig.theme || 'daisy';
+            const themeDef = (window.weddingThemes && window.weddingThemes[themeKey]) || window.weddingThemes?.daisy;
+            const type = themeDef?.petalType || 'daisy';
+            const colors = themeDef?.petalColors || ['rgba(250, 248, 245, 0.9)'];
+            const fillColor = colors[this.colorSeed % colors.length];
 
-            if (this.size > 10) {
-                ctx.shadowColor = 'transparent';
+            ctx.globalAlpha = this.opacity;
+            ctx.fillStyle = fillColor;
+
+            if (type === 'rose') {
+                // Heart/Teardrop Curved Rose Petal
                 ctx.beginPath();
-                ctx.arc(0, -this.size + 4, 1.5, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(227, 168, 87, 0.75)';
+                ctx.moveTo(0, -this.size);
+                ctx.bezierCurveTo(-this.size * 0.9, -this.size * 0.4, -this.size * 0.7, this.size * 0.7, 0, this.size);
+                ctx.bezierCurveTo(this.size * 0.7, this.size * 0.7, this.size * 0.9, -this.size * 0.4, 0, -this.size);
                 ctx.fill();
+            } else if (type === 'sunflower') {
+                // Pointed Elongated Sunflower Petal
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size * 1.3);
+                ctx.quadraticCurveTo(this.size * 0.55, 0, 0, this.size * 1.1);
+                ctx.quadraticCurveTo(-this.size * 0.55, 0, 0, -this.size * 1.3);
+                ctx.fill();
+                if (this.size > 8) {
+                    ctx.fillStyle = themeDef?.centerColor || 'rgba(92, 43, 20, 0.7)';
+                    ctx.beginPath();
+                    ctx.arc(0, this.size * 0.7, 1.8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'lavender') {
+                // Cluster of 3 small lavender florets
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    const ox = (i - 1) * (this.size * 0.35);
+                    const oy = (i % 2) * (this.size * 0.3);
+                    ctx.ellipse(ox, oy, this.size * 0.25, this.size * 0.45, (i - 1) * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'sakura') {
+                // 5-notch Sakura Cherry Blossom Petal
+                ctx.beginPath();
+                ctx.moveTo(0, this.size);
+                ctx.bezierCurveTo(-this.size * 0.7, 0, -this.size * 0.6, -this.size * 0.8, -this.size * 0.2, -this.size);
+                ctx.lineTo(0, -this.size * 0.75); // Notch
+                ctx.lineTo(this.size * 0.2, -this.size);
+                ctx.bezierCurveTo(this.size * 0.6, -this.size * 0.8, this.size * 0.7, 0, 0, this.size);
+                ctx.fill();
+            } else if (type === 'tulip') {
+                // Cupped Tulip Petal
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size);
+                ctx.quadraticCurveTo(this.size * 0.75, -this.size * 0.3, 0, this.size);
+                ctx.quadraticCurveTo(-this.size * 0.75, -this.size * 0.3, 0, -this.size);
+                ctx.fill();
+            } else if (type === 'orchid') {
+                // Flared Orchid Petal
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size * 1.1);
+                ctx.bezierCurveTo(-this.size, -this.size * 0.2, -this.size * 0.5, this.size * 0.8, 0, this.size);
+                ctx.bezierCurveTo(this.size * 0.5, this.size * 0.8, this.size, -this.size * 0.2, 0, -this.size * 1.1);
+                ctx.fill();
+            } else if (type === 'lotus') {
+                // Lotus Teardrop Petal
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size * 1.2);
+                ctx.quadraticCurveTo(-this.size * 0.7, 0, 0, this.size * 0.9);
+                ctx.quadraticCurveTo(this.size * 0.7, 0, 0, -this.size * 1.2);
+                ctx.fill();
+            } else if (type === 'peony') {
+                // Scalloped Peony Petal
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (type === 'hydrangea') {
+                // 4-petaled Hydrangea Floret Cross
+                for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+                    ctx.beginPath();
+                    ctx.ellipse(Math.cos(a) * this.size * 0.35, Math.sin(a) * this.size * 0.35, this.size * 0.25, this.size * 0.35, a, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'wildflower') {
+                // Mixed Wildflower Petal
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size * 0.4, this.size * 0.9, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Classic Daisy Petal
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size * this.aspectRatio, this.size, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (this.size > 10) {
+                    ctx.shadowColor = 'transparent';
+                    ctx.beginPath();
+                    ctx.arc(0, -this.size + 4, 1.5, 0, Math.PI * 2);
+                    ctx.fillStyle = themeDef?.centerColor || 'rgba(227, 168, 87, 0.75)';
+                    ctx.fill();
+                }
             }
 
             ctx.restore();
@@ -1247,6 +1373,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editColorForest = document.getElementById('edit-color-forest');
     const editColorGold = document.getElementById('edit-color-gold');
 
+    const editColorTextHeroNames = document.getElementById('edit-color-text-hero-names');
+    const editColorTextHeroSub = document.getElementById('edit-color-text-hero-sub');
+    const editColorTextHeadings = document.getElementById('edit-color-text-headings');
+    const editColorTextBody = document.getElementById('edit-color-text-body');
+    const editColorTextNav = document.getElementById('edit-color-text-nav');
+    const editColorTextFooter = document.getElementById('edit-color-text-footer');
+    const resetTextColorsBtn = document.getElementById('reset-text-colors-btn');
+
     const editMusicUrl = document.getElementById('edit-music-url');
     const editPetalDensity = document.getElementById('edit-petal-density');
     const petalCountVal = document.getElementById('petal-count-val');
@@ -1280,7 +1414,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (trigger) trigger.style.display = 'none';
         if (sidebar) {
             sidebar.classList.remove('hidden');
-            sidebar.setAttribute('style', 'display: flex !important; transform: translateX(0) !important; opacity: 1 !important; visibility: visible !important; pointer-events: all !important; z-index: 99999999 !important;');
+            sidebar.setAttribute('style', 'display: flex !important; flex-direction: column !important; height: 100vh !important; height: 100dvh !important; max-height: 100vh !important; max-height: 100dvh !important; overflow: hidden !important; transform: translateX(0) !important; opacity: 1 !important; visibility: visible !important; pointer-events: all !important; z-index: 99999999 !important;');
         }
         document.body.classList.add('editing-mode');
         makeTextElementsEditable(true);
@@ -1291,24 +1425,343 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.openCreatorStudioSidebar = openCreatorStudioSidebar;
 
+    function closeCreatorStudioSidebar() {
+        localStorage.removeItem('daisy_creator_unlocked');
+        const sidebar = document.getElementById('creator-sidebar');
+        const trigger = document.querySelector('.creator-trigger-wrapper');
+        if (sidebar) {
+            sidebar.classList.add('hidden');
+            sidebar.setAttribute('style', 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; transform: translateX(100%) !important;');
+        }
+        if (trigger) {
+            trigger.style.display = 'block';
+            trigger.classList.remove('hidden');
+        }
+        document.body.classList.remove('editing-mode');
+        if (typeof makeTextElementsEditable === 'function') {
+            makeTextElementsEditable(false);
+        }
+        if (typeof removeVisualEditorOverlays === 'function') {
+            removeVisualEditorOverlays();
+        }
+    }
+    window.closeCreatorStudioSidebar = closeCreatorStudioSidebar;
+
     // Sidebar Toggling
     safeOn(openCreatorBtn, 'click', () => {
         openCreatorStudioSidebar();
     });
 
     safeOn(closeCreatorBtn, 'click', () => {
-        if (creatorSidebar) creatorSidebar.classList.add('hidden');
-        const trigger = document.querySelector('.creator-trigger-wrapper');
-        if (trigger) { trigger.style.display = 'block'; trigger.classList.remove('hidden'); }
-        document.body.classList.remove('editing-mode');
-        makeTextElementsEditable(false);
+        closeCreatorStudioSidebar();
     });
 
-    // Populate Sidebar fields with active config values
+    // ----------------------------------------------------
+    // Theme Manager & Theme Switcher Tool
+    // ----------------------------------------------------
+    function renderThemeCards() {
+        const grid = document.getElementById('theme-cards-grid');
+        const select = document.getElementById('theme-preset-select');
+        if (!grid || !window.weddingThemes) return;
+
+        const currentTheme = activeConfig.theme || 'daisy';
+
+        grid.innerHTML = Object.keys(window.weddingThemes).map(key => {
+            const t = window.weddingThemes[key];
+            const isActive = (key === currentTheme);
+            return `
+                <div class="theme-card ${isActive ? 'active' : ''}" data-theme-id="${key}">
+                    <div class="theme-card-icon">${t.icon}</div>
+                    <div class="theme-card-title">${t.name}</div>
+                    <div class="theme-card-swatches">
+                        <span class="theme-swatch" style="background:${t.colors.creamBg};" title="Background"></span>
+                        <span class="theme-swatch" style="background:${t.colors.sageMedium};" title="Accent"></span>
+                        <span class="theme-swatch" style="background:${t.colors.forest};" title="Primary"></span>
+                        <span class="theme-swatch" style="background:${t.colors.gold};" title="Gold"></span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (select) select.value = currentTheme;
+
+        grid.querySelectorAll('.theme-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const themeId = card.getAttribute('data-theme-id');
+                selectTheme(themeId);
+            });
+        });
+    }
+
+    // Render theme-specific flower illustrations for background watermarks & corner ornaments
+    function applyThemeWatermarks(themeId) {
+        const theme = (window.weddingThemes && window.weddingThemes[themeId]) || window.weddingThemes?.daisy;
+        if (!theme) return;
+
+        const petalType = theme.petalType || 'daisy';
+
+        let watermarkSVG = '';
+
+        if (petalType === 'rose') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 50,70 C 52,88 65,102 75,110" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45" />
+                <path d="M 57,80 Q 75,75 80,65 Q 70,82 57,80" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.4" />
+                <g transform="translate(60, 55)">
+                    <circle cx="0" cy="0" r="26" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.6" opacity="0.35"/>
+                    <path d="M -18,-5 C -15,-22 15,-22 18,-5 C 22,15 -22,15 -18,-5 Z" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.6" opacity="0.5"/>
+                    <path d="M -10,-12 C 0,-20 10,-12 12,-2 C 12,8 -12,8 -10,-12 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.6" opacity="0.6"/>
+                    <circle cx="0" cy="-2" r="6" fill="var(--color-gold)" opacity="0.8"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'sunflower') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,65 C 62,85 70,100 80,110" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45" />
+                <g transform="translate(60, 50)">
+                    ${Array.from({length: 16}).map((_, i) => `<path d="M 0,0 L -5,-26 Q 0,-34 5,-26 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.5" transform="rotate(${i * 22.5})"/>`).join('')}
+                    <circle cx="0" cy="0" r="14" fill="var(--color-forest)" opacity="0.65" />
+                    <circle cx="0" cy="0" r="10" fill="var(--color-gold)" opacity="0.8" />
+                </g>
+            </svg>`;
+        } else if (petalType === 'lavender') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,115 L 60,25" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.5" opacity="0.5" />
+                <g stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.6">
+                    <ellipse cx="52" cy="30" rx="8" ry="4" fill="var(--color-sage-light)" transform="rotate(-20 52 30)"/>
+                    <ellipse cx="68" cy="30" rx="8" ry="4" fill="var(--color-sage-light)" transform="rotate(20 68 30)"/>
+                    <ellipse cx="50" cy="45" rx="9" ry="4.5" fill="var(--color-gold)" transform="rotate(-25 50 45)"/>
+                    <ellipse cx="70" cy="45" rx="9" ry="4.5" fill="var(--color-gold)" transform="rotate(25 70 45)"/>
+                    <ellipse cx="48" cy="60" rx="10" ry="5" fill="var(--color-sage-light)" transform="rotate(-30 48 60)"/>
+                    <ellipse cx="72" cy="60" rx="10" ry="5" fill="var(--color-sage-light)" transform="rotate(30 72 60)"/>
+                    <ellipse cx="46" cy="75" rx="11" ry="5" fill="var(--color-gold)" transform="rotate(-30 46 75)"/>
+                    <ellipse cx="74" cy="75" rx="11" ry="5" fill="var(--color-gold)" transform="rotate(30 74 75)"/>
+                    <ellipse cx="44" cy="90" rx="11" ry="5.5" fill="var(--color-sage-light)" transform="rotate(-30 44 90)"/>
+                    <ellipse cx="76" cy="90" rx="11" ry="5.5" fill="var(--color-sage-light)" transform="rotate(30 76 90)"/>
+                    <ellipse cx="60" cy="20" rx="5" ry="9" fill="var(--color-gold)"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'sakura') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 20,90 Q 60,70 85,25" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45" />
+                <g transform="translate(60, 50)">
+                    ${Array.from({length: 5}).map((_, i) => `
+                        <g transform="rotate(${i * 72})">
+                            <path d="M 0,0 C -12,-15 -10,-28 -3,-28 C 0,-28 0,-24 3,-28 C 10,-28 12,-15 0,0 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.55"/>
+                        </g>
+                    `).join('')}
+                    <circle cx="0" cy="0" r="5" fill="var(--color-gold)" opacity="0.85"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'tulip') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,110 C 60,80 58,60 60,45" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.5" opacity="0.5"/>
+                <path d="M 60,95 Q 85,85 75,65 Q 65,80 60,95" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.4"/>
+                <g transform="translate(60, 35)">
+                    <path d="M -16,10 Q -24,-15 0,-30 Q 24,-15 16,10 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.6" opacity="0.5"/>
+                    <path d="M -12,10 Q 0,-25 12,10 Z" fill="var(--color-gold)" stroke="var(--color-sage-medium)" stroke-width="0.6" opacity="0.6"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'orchid') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 30,105 Q 60,75 80,35" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45"/>
+                <g transform="translate(60, 48)">
+                    <path d="M 0,0 L 0,-28 Q 6,-32 0,-35 Q -6,-32 0,-28 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.5"/>
+                    <path d="M 0,0 L -22,16 Q -28,20 -24,24 Q -18,22 -22,16 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.5"/>
+                    <path d="M 0,0 L 22,16 Q 28,20 24,24 Q 18,22 22,16 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.5"/>
+                    <ellipse cx="-18" cy="-8" rx="14" ry="9" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.6" transform="rotate(-15 -18 -8)"/>
+                    <ellipse cx="18" cy="-8" rx="14" ry="9" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.6" transform="rotate(15 18 -8)"/>
+                    <path d="M -8,2 Q 0,18 8,2 Q 0,-2 -8,2 Z" fill="var(--color-gold)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.85"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'lotus') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <ellipse cx="60" cy="85" rx="35" ry="10" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.4"/>
+                <g transform="translate(60, 60)">
+                    <path d="M 0,10 Q -30,0 -35,-20 Q -15,-15 0,10 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.4"/>
+                    <path d="M 0,10 Q 30,0 35,-20 Q 15,-15 0,10 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.4"/>
+                    <path d="M 0,10 Q -18,-10 -20,-30 Q -5,-22 0,10 Z" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.55"/>
+                    <path d="M 0,10 Q 18,-10 20,-30 Q 5,-22 0,10 Z" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.55"/>
+                    <path d="M 0,10 Q -8,-15 0,-38 Q 8,-15 0,10 Z" fill="var(--color-gold)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.75"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'peony') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,65 C 62,85 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <g transform="translate(60, 50)">
+                    ${Array.from({length: 10}).map((_, i) => `<path d="M 0,0 Q -15,-20 0,-30 Q 15,-20 0,0 Z" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.4" transform="rotate(${i * 36})"/>`).join('')}
+                    ${Array.from({length: 7}).map((_, i) => `<path d="M 0,0 Q -10,-14 0,-20 Q 10,-14 0,0 Z" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.55" transform="rotate(${i * 51.4 + 18})"/>`).join('')}
+                    <circle cx="0" cy="0" r="7" fill="var(--color-gold)" opacity="0.8"/>
+                </g>
+            </svg>`;
+        } else if (petalType === 'hydrangea') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,110 L 60,50" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45"/>
+                <g transform="translate(60, 48)">
+                    ${[
+                        {x:0, y:-18}, {x:-16, y:-8}, {x:16, y:-8},
+                        {x:-22, y:10}, {x:0, y:5}, {x:22, y:10},
+                        {x:-12, y:24}, {x:12, y:24}
+                    ].map(pos => `
+                        <g transform="translate(${pos.x}, ${pos.y})">
+                            <circle cx="-4" cy="0" r="3.5" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.4" opacity="0.6"/>
+                            <circle cx="4" cy="0" r="3.5" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.4" opacity="0.6"/>
+                            <circle cx="0" cy="-4" r="3.5" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.4" opacity="0.6"/>
+                            <circle cx="0" cy="4" r="3.5" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.4" opacity="0.6"/>
+                            <circle cx="0" cy="0" r="1.5" fill="var(--color-gold)"/>
+                        </g>
+                    `).join('')}
+                </g>
+            </svg>`;
+        } else if (petalType === 'wildflower') {
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 45,110 Q 55,70 40,30" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45"/>
+                <path d="M 65,110 Q 60,65 75,25" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.2" opacity="0.45"/>
+                <g transform="translate(40, 30)">
+                    ${Array.from({length: 5}).map((_, i) => `<ellipse cx="0" cy="-12" rx="4" ry="9" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.4" transform="rotate(${i * 72})"/>`).join('')}
+                    <circle cx="0" cy="0" r="4" fill="var(--color-gold)"/>
+                </g>
+                <g transform="translate(75, 25)">
+                    <circle cx="0" cy="-6" r="3" fill="var(--color-gold)"/>
+                    <circle cx="-6" cy="0" r="3" fill="var(--color-gold)"/>
+                    <circle cx="6" cy="0" r="3" fill="var(--color-gold)"/>
+                    <circle cx="0" cy="6" r="3" fill="var(--color-gold)"/>
+                    <circle cx="0" cy="0" r="2.5" fill="var(--color-forest)"/>
+                </g>
+            </svg>`;
+        } else {
+            // Default Meadow Daisy Shape
+            watermarkSVG = `
+            <svg viewBox="0 0 120 120" width="100%" height="100%">
+                <path d="M 60,60 C 62,80 75,98 85,108" fill="none" stroke="var(--color-sage-medium)" stroke-width="1.0" opacity="0.45" />
+                <path d="M 67,78 C 76,78 81,72 83,68 C 76,72 69,76 67,78" fill="var(--color-sage-light)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.3" />
+                <g transform="translate(60, 60)">
+                    ${Array.from({length: 12}).map((_, i) => `<ellipse cx="0" cy="-22" rx="4.5" ry="16" fill="var(--color-cream-bg)" stroke="var(--color-sage-medium)" stroke-width="0.5" opacity="0.45" transform="rotate(${i * 30})"/>`).join('')}
+                    <circle cx="0" cy="0" r="7.5" fill="var(--color-gold)" opacity="0.75" />
+                </g>
+            </svg>`;
+        }
+
+        document.querySelectorAll('.section-watermark').forEach(el => {
+            el.innerHTML = watermarkSVG;
+        });
+        document.querySelectorAll('.floral-corner').forEach(el => {
+            el.innerHTML = watermarkSVG;
+        });
+    }
+
+    function selectTheme(themeId) {
+        if (!window.weddingThemes || !window.weddingThemes[themeId]) return;
+
+        // 1. Save current theme's bouquet, hero background images & custom colors before switching
+        if (activeConfig.theme) {
+            const current = activeConfig.theme;
+
+            activeConfig.themeColors = activeConfig.themeColors || {};
+            if (activeConfig.colors) {
+                activeConfig.themeColors[current] = { ...activeConfig.colors };
+            }
+
+            activeConfig.themeBouquets = activeConfig.themeBouquets || {};
+            if (activeConfig.design?.heroBouquetUrl) {
+                activeConfig.themeBouquets[current] = activeConfig.design.heroBouquetUrl;
+            }
+
+            activeConfig.themeHeroBgs = activeConfig.themeHeroBgs || {};
+            if (activeConfig.design?.heroBgUrl) {
+                activeConfig.themeHeroBgs[current] = activeConfig.design.heroBgUrl;
+            }
+
+            activeConfig.themeHeroMobileBgs = activeConfig.themeHeroMobileBgs || {};
+            if (activeConfig.design?.heroBgMobileUrl) {
+                activeConfig.themeHeroMobileBgs[current] = activeConfig.design.heroBgMobileUrl;
+            }
+        }
+
+        const theme = window.weddingThemes[themeId];
+        activeConfig.theme = themeId;
+        activeConfig.design = activeConfig.design || {};
+
+        // Restore custom colors for this theme if edited, else use theme default
+        activeConfig.themeColors = activeConfig.themeColors || {};
+        if (activeConfig.themeColors[themeId]) {
+            activeConfig.colors = { ...theme.colors, ...activeConfig.themeColors[themeId] };
+        } else {
+            activeConfig.colors = { ...theme.colors };
+        }
+
+        // 2. Restore custom bouquet for this theme if uploaded/modified, else use default
+        activeConfig.themeBouquets = activeConfig.themeBouquets || {};
+        if (activeConfig.themeBouquets[themeId]) {
+            activeConfig.design.heroBouquetUrl = activeConfig.themeBouquets[themeId];
+        } else {
+            activeConfig.design.heroBouquetUrl = theme.heroBouquetUrl;
+        }
+
+        // 3. Restore custom Desktop & Mobile hero background for this theme if uploaded, else use default
+        activeConfig.themeHeroBgs = activeConfig.themeHeroBgs || {};
+        if (activeConfig.themeHeroBgs[themeId]) {
+            activeConfig.design.heroBgUrl = activeConfig.themeHeroBgs[themeId];
+        } else {
+            activeConfig.design.heroBgUrl = theme.heroBgUrl || 'assets/hero_bg.jpg';
+        }
+
+        activeConfig.themeHeroMobileBgs = activeConfig.themeHeroMobileBgs || {};
+        if (activeConfig.themeHeroMobileBgs[themeId]) {
+            activeConfig.design.heroBgMobileUrl = activeConfig.themeHeroMobileBgs[themeId];
+        } else {
+            activeConfig.design.heroBgMobileUrl = '';
+        }
+
+        if (theme.dressCode) {
+            activeConfig.dressCode = activeConfig.dressCode || {};
+            activeConfig.dressCode.colors = JSON.parse(JSON.stringify(theme.dressCode));
+        }
+
+        applyThemeColors(activeConfig.colors);
+        applyThemeWatermarks(themeId);
+        applyDesignStyles();
+        renderDynamicElements(activeConfig);
+
+        if (editColorCream) editColorCream.value = activeConfig.colors?.creamBg || '';
+        if (editColorSageLight) editColorSageLight.value = activeConfig.colors?.sageLight || '';
+        if (editColorSageMed) editColorSageMed.value = activeConfig.colors?.sageMedium || '';
+        if (editColorForest) editColorForest.value = activeConfig.colors?.forest || '';
+        if (editColorGold) editColorGold.value = activeConfig.colors?.gold || '';
+
+        if (editColorTextHeroNames) editColorTextHeroNames.value = activeConfig.colors?.textHeroNames || '#ffffff';
+        if (editColorTextHeroSub)   editColorTextHeroSub.value   = activeConfig.colors?.textHeroSub   || '#f4ead4';
+        if (editColorTextHeadings)  editColorTextHeadings.value  = activeConfig.colors?.textHeadings  || activeConfig.colors?.forest || '#2c3e2f';
+        if (editColorTextBody)      editColorTextBody.value      = activeConfig.colors?.textBody      || '#555e57';
+        if (editColorTextNav)       editColorTextNav.value       = activeConfig.colors?.textNav       || '#2a2e2b';
+        if (editColorTextFooter)    editColorTextFooter.value    = activeConfig.colors?.textFooter    || '#ffffff';
+        if (typeof renderDressColorsEditorList === 'function') renderDressColorsEditorList();
+
+        renderThemeCards();
+        if (typeof autoSaveConfig === 'function') {
+            autoSaveConfig();
+        }
+
+        showToast(`Switched to ${theme.icon} ${theme.name} Theme!`);
+    }
+
+    safeOn('theme-preset-select', 'change', (e) => {
+        selectTheme(e.target.value);
+    });
+
     // Populate Sidebar fields with active config values (Crash-proof)
     function populateSidebarFields(configObj) {
         if (!configObj) return;
         try {
+            renderThemeCards();
             // Setup checkboxes
             const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
             setCheck('toggle-sec-parents', configObj.sections?.parents);
@@ -1373,6 +1826,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (editColorForest) editColorForest.value = configObj.colors?.forest || rootStyles.getPropertyValue('--color-forest').trim();
             if (editColorGold) editColorGold.value = configObj.colors?.gold || rootStyles.getPropertyValue('--color-gold').trim();
 
+            if (editColorTextHeroNames) editColorTextHeroNames.value = configObj.colors?.textHeroNames || '#ffffff';
+            if (editColorTextHeroSub)   editColorTextHeroSub.value   = configObj.colors?.textHeroSub   || '#f4ead4';
+            if (editColorTextHeadings)  editColorTextHeadings.value  = configObj.colors?.textHeadings  || configObj.colors?.forest || '#2c3e2f';
+            if (editColorTextBody)      editColorTextBody.value      = configObj.colors?.textBody      || '#555e57';
+            if (editColorTextNav)       editColorTextNav.value       = configObj.colors?.textNav       || '#2a2e2b';
+            if (editColorTextFooter)    editColorTextFooter.value    = configObj.colors?.textFooter    || '#ffffff';
+
             const editTextScale = document.getElementById('edit-text-scale');
             const textScaleVal = document.getElementById('text-scale-val');
             if (editTextScale && textScaleVal) {
@@ -1384,6 +1844,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (editMusicUrl) editMusicUrl.value = configObj.musicUrl ?? '';
             if (editPetalDensity) editPetalDensity.value = configObj.petalDensity ?? 35;
             if (petalCountVal) petalCountVal.innerText = configObj.petalDensity ?? 35;
+            if (typeof updateHeroBgPreviews === 'function') updateHeroBgPreviews();
 
             const editGoogleSheetsUrl = document.getElementById('edit-google-sheets-url');
             if (editGoogleSheetsUrl) {
@@ -1600,17 +2061,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             { el: editColorSageLight, varName: '--color-sage-light', prop: 'sageLight' },
             { el: editColorSageMed, varName: '--color-sage-medium', prop: 'sageMedium' },
             { el: editColorForest, varName: '--color-forest', prop: 'forest' },
-            { el: editColorGold, varName: '--color-gold', prop: 'gold' }
+            { el: editColorGold, varName: '--color-gold', prop: 'gold' },
+            { el: editColorTextHeroNames, varName: '--color-text-hero-names', prop: 'textHeroNames' },
+            { el: editColorTextHeroSub, varName: '--color-text-hero-sub', prop: 'textHeroSub' },
+            { el: editColorTextHeadings, varName: '--color-text-headings', prop: 'textHeadings' },
+            { el: editColorTextBody, varName: '--color-text-body', prop: 'textBody' },
+            { el: editColorTextNav, varName: '--color-text-nav', prop: 'textNav' },
+            { el: editColorTextFooter, varName: '--color-text-footer', prop: 'textFooter' }
         ];
 
         colorPickers.forEach(picker => {
+            if (!picker.el) return;
             picker.el.addEventListener('input', (e) => {
                 const colorVal = e.target.value;
                 document.documentElement.style.setProperty(picker.varName, colorVal);
+                activeConfig.colors = activeConfig.colors || {};
                 activeConfig.colors[picker.prop] = colorVal;
+
+                // Save custom color palette to current theme memory
+                const currentTheme = activeConfig.theme || 'daisy';
+                activeConfig.themeColors = activeConfig.themeColors || {};
+                activeConfig.themeColors[currentTheme] = { ...activeConfig.colors };
+
                 autoSaveConfig();
             });
         });
+
+        if (resetTextColorsBtn) {
+            resetTextColorsBtn.addEventListener('click', () => {
+                const textColorProps = ['textHeroNames', 'textHeroSub', 'textHeadings', 'textBody', 'textNav', 'textFooter'];
+                const textColorVars = ['--color-text-hero-names', '--color-text-hero-sub', '--color-text-headings', '--color-text-body', '--color-text-nav', '--color-text-footer'];
+                
+                textColorProps.forEach(p => { if (activeConfig.colors) delete activeConfig.colors[p]; });
+                textColorVars.forEach(v => document.documentElement.style.removeProperty(v));
+
+                // Refresh values from current theme
+                const currentTheme = activeConfig.theme || 'daisy';
+                if (typeof selectTheme === 'function') {
+                    selectTheme(currentTheme);
+                }
+                if (typeof showToast === 'function') showToast('Text colours reset to theme default', true, '🖊️');
+            });
+        }
 
         // Live Music url update (Real-time input & change)
         const updateMusicUrlHandler = (e) => {
@@ -1717,6 +2209,123 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 reader.readAsDataURL(file);
             }
+        });
+
+        // ----------------------------------------------------
+        // Desktop & Mobile Hero Background Upload Handlers
+        // ----------------------------------------------------
+        const uploadHeroBgDesktop = document.getElementById('upload-hero-bg-desktop');
+        const uploadHeroBgMobile = document.getElementById('upload-hero-bg-mobile');
+        const resetHeroBgDesktopBtn = document.getElementById('reset-hero-bg-desktop-btn');
+        const resetHeroBgMobileBtn = document.getElementById('reset-hero-bg-mobile-btn');
+
+        function updateHeroBgPreviews() {
+            const previewDesktop = document.getElementById('preview-hero-bg-desktop');
+            const previewDesktopWrapper = document.getElementById('preview-hero-bg-desktop-wrapper');
+            const previewMobile = document.getElementById('preview-hero-bg-mobile');
+            const previewMobileWrapper = document.getElementById('preview-hero-bg-mobile-wrapper');
+
+            const currentTheme = activeConfig.theme || 'daisy';
+            const themeDef = (window.weddingThemes && window.weddingThemes[currentTheme]) || window.weddingThemes?.daisy;
+
+            const desktopUrl = activeConfig.design?.heroBgUrl || themeDef?.heroBgUrl || '';
+            const mobileUrl = activeConfig.design?.heroBgMobileUrl || '';
+
+            if (previewDesktop && previewDesktopWrapper) {
+                if (desktopUrl) {
+                    previewDesktop.src = desktopUrl;
+                    previewDesktopWrapper.style.display = 'block';
+                } else {
+                    previewDesktopWrapper.style.display = 'none';
+                }
+            }
+
+            if (previewMobile && previewMobileWrapper) {
+                if (mobileUrl) {
+                    previewMobile.src = mobileUrl;
+                    previewMobileWrapper.style.display = 'block';
+                } else {
+                    previewMobileWrapper.style.display = 'none';
+                }
+            }
+        }
+        window.updateHeroBgPreviews = updateHeroBgPreviews;
+
+        if (uploadHeroBgDesktop) {
+            uploadHeroBgDesktop.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (evt) => {
+                    const compressedUrl = (typeof compressImage === 'function') ? await compressImage(evt.target.result) : evt.target.result;
+                    activeConfig.design = activeConfig.design || {};
+                    activeConfig.design.heroBgUrl = compressedUrl;
+
+                    const currentTheme = activeConfig.theme || 'daisy';
+                    activeConfig.themeHeroBgs = activeConfig.themeHeroBgs || {};
+                    activeConfig.themeHeroBgs[currentTheme] = compressedUrl;
+
+                    applyDesignStyles();
+                    updateHeroBgPreviews();
+                    autoSaveConfig();
+                    if (typeof showToast === 'function') showToast('💻 Desktop background updated!', true, '🖼️');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (uploadHeroBgMobile) {
+            uploadHeroBgMobile.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (evt) => {
+                    const compressedUrl = (typeof compressImage === 'function') ? await compressImage(evt.target.result) : evt.target.result;
+                    activeConfig.design = activeConfig.design || {};
+                    activeConfig.design.heroBgMobileUrl = compressedUrl;
+
+                    const currentTheme = activeConfig.theme || 'daisy';
+                    activeConfig.themeHeroMobileBgs = activeConfig.themeHeroMobileBgs || {};
+                    activeConfig.themeHeroMobileBgs[currentTheme] = compressedUrl;
+
+                    applyDesignStyles();
+                    updateHeroBgPreviews();
+                    autoSaveConfig();
+                    if (typeof showToast === 'function') showToast('📱 Mobile background updated!', true, '🖼️');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (resetHeroBgDesktopBtn) {
+            resetHeroBgDesktopBtn.addEventListener('click', () => {
+                const currentTheme = activeConfig.theme || 'daisy';
+                if (activeConfig.themeHeroBgs) delete activeConfig.themeHeroBgs[currentTheme];
+                const themeDef = (window.weddingThemes && window.weddingThemes[currentTheme]) || window.weddingThemes?.daisy;
+                if (activeConfig.design) activeConfig.design.heroBgUrl = themeDef?.heroBgUrl || 'assets/hero_bg.jpg';
+                if (uploadHeroBgDesktop) uploadHeroBgDesktop.value = '';
+                applyDesignStyles();
+                updateHeroBgPreviews();
+                autoSaveConfig();
+                if (typeof showToast === 'function') showToast('Desktop background reset to theme default', true, '🔄');
+            });
+        }
+
+        if (resetHeroBgMobileBtn) {
+            resetHeroBgMobileBtn.addEventListener('click', () => {
+                const currentTheme = activeConfig.theme || 'daisy';
+                if (activeConfig.themeHeroMobileBgs) delete activeConfig.themeHeroMobileBgs[currentTheme];
+                if (activeConfig.design) activeConfig.design.heroBgMobileUrl = '';
+                if (uploadHeroBgMobile) uploadHeroBgMobile.value = '';
+                applyDesignStyles();
+                updateHeroBgPreviews();
+                autoSaveConfig();
+                if (typeof showToast === 'function') showToast('Mobile background reset to theme default', true, '🔄');
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            if (typeof applyDesignStyles === 'function') applyDesignStyles();
         });
 
         // Google Sheets Auto-Sync Listener & Test Trigger
@@ -2002,12 +2611,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             const reader = new FileReader();
             reader.onload = async (evt) => {
                 const compressedUrl = await compressImage(evt.target.result);
+                activeConfig.design = activeConfig.design || {};
                 activeConfig.design.heroBouquetUrl = compressedUrl;
+
+                const currentTheme = activeConfig.theme || 'daisy';
+                activeConfig.themeBouquets = activeConfig.themeBouquets || {};
+                activeConfig.themeBouquets[currentTheme] = compressedUrl;
+
                 applyDesignStyles();
                 autoSaveConfig();
             };
             reader.readAsDataURL(file);
         }
+    });
+
+    safeOn('reset-theme-bouquet-btn', 'click', () => {
+        const currentTheme = activeConfig.theme || 'daisy';
+        if (activeConfig.themeBouquets) {
+            delete activeConfig.themeBouquets[currentTheme];
+        }
+        const themeDef = (window.weddingThemes && window.weddingThemes[currentTheme]) || window.weddingThemes?.daisy;
+        if (themeDef && activeConfig.design) {
+            activeConfig.design.heroBouquetUrl = themeDef.heroBouquetUrl;
+        }
+        if (editUploadBouquet) editUploadBouquet.value = '';
+        applyDesignStyles();
+        autoSaveConfig();
+        if (typeof showToast === 'function') showToast('Bouquet reset to theme default!', true, '🌸');
     });
 
     safeOn(editBouquetScale, 'input', (e) => {
@@ -2494,7 +3124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (resetConfigBtn) {
         resetConfigBtn.addEventListener('click', () => {
-            if (confirm("Are you sure you want to discard your custom edits and reset to the config.js defaults?")) {
+            if (confirm("Are you sure you want to discard your custom edits and reset to the French Lavender defaults?")) {
+                localStorage.removeItem(STORAGE_KEY);
                 localStorage.removeItem('daisy_wedding_design_config');
                 location.reload();
             }
@@ -2559,10 +3190,20 @@ window.weddingConfig = ${JSON.stringify(exportObj, null, 4)};
 
     // Function to show passcode prompt
     function showPasscodeModal() {
+        const isUnlocked = localStorage.getItem('daisy_creator_unlocked') === 'true';
+        if (isUnlocked) {
+            if (typeof openCreatorStudioSidebar === 'function') {
+                openCreatorStudioSidebar();
+            }
+            return;
+        }
+
         if (passcodeModal) {
             passcodeModal.classList.remove('hidden');
-            passcodeInput.value = '';
-            passcodeInput.focus();
+            if (passcodeInput) {
+                passcodeInput.value = '';
+                passcodeInput.focus();
+            }
             if (passcodeError) passcodeError.classList.add('hidden');
         }
     }
@@ -2576,8 +3217,9 @@ window.weddingConfig = ${JSON.stringify(exportObj, null, 4)};
 
     // Submit passcode logic
     function handlePasscodeSubmit() {
-        const entered = passcodeInput.value.trim().toLowerCase();
+        const entered = passcodeInput ? passcodeInput.value.trim().toLowerCase() : '';
         if (entered === 'daisy2026' || entered === '1234' || entered === 'daisy' || entered === 'alexander') {
+            localStorage.setItem('daisy_creator_unlocked', 'true');
             hidePasscodeModal();
             if (typeof openCreatorStudioSidebar === 'function') {
                 openCreatorStudioSidebar();
@@ -2605,29 +3247,85 @@ window.weddingConfig = ${JSON.stringify(exportObj, null, 4)};
     }
 
     // Lock Creator Mode (Logout)
+    function lockCreatorMode() {
+        localStorage.removeItem('daisy_creator_unlocked');
+        sessionStorage.removeItem('daisy_creator_unlocked');
+
+        const sidebar = document.getElementById('creator-sidebar');
+        if (sidebar) {
+            sidebar.classList.add('hidden');
+            sidebar.style.cssText = 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; transform: translateX(100%) !important;';
+        }
+
+        const trigger = document.querySelector('.creator-trigger-wrapper');
+        if (trigger) {
+            trigger.style.display = 'none';
+            trigger.style.visibility = 'hidden';
+            trigger.classList.add('hidden');
+        }
+
+        document.body.classList.remove('editing-mode');
+        if (typeof makeTextElementsEditable === 'function') {
+            makeTextElementsEditable(false);
+        }
+        if (typeof removeVisualEditorOverlays === 'function') {
+            removeVisualEditorOverlays();
+        }
+
+        if (typeof showToast === 'function') {
+            showToast('🔒 Creator Mode locked successfully', false, '🔒');
+        }
+
+        setTimeout(() => {
+            window.location.href = window.location.pathname;
+        }, 300);
+    }
+    window.lockCreatorMode = lockCreatorMode;
+
     if (lockCreatorBtn) {
-        lockCreatorBtn.addEventListener('click', () => {
-            localStorage.removeItem('daisy_creator_unlocked');
-            location.reload();
+        lockCreatorBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            lockCreatorMode();
         });
     }
 
-    // Trigger 1: Keyboard Shortcut (Ctrl/Cmd/Alt + Shift + E) — reveals top-right Edit Design button & prompts password
+    function toggleCreatorStudio() {
+        const sidebar = document.getElementById('creator-sidebar');
+        const isHidden = !sidebar || sidebar.classList.contains('hidden') || sidebar.style.display === 'none';
+
+        const trigger = document.querySelector('.creator-trigger-wrapper');
+        if (trigger) {
+            trigger.style.display = 'block';
+            trigger.style.visibility = 'visible';
+            trigger.classList.remove('hidden');
+        }
+
+        if (isHidden) {
+            const isUnlocked = localStorage.getItem('daisy_creator_unlocked') === 'true';
+            if (isUnlocked) {
+                if (typeof openCreatorStudioSidebar === 'function') openCreatorStudioSidebar();
+            } else {
+                if (typeof showPasscodeModal === 'function') showPasscodeModal();
+            }
+        } else {
+            if (typeof closeCreatorStudioSidebar === 'function') closeCreatorStudioSidebar();
+        }
+    }
+    window.toggleCreatorStudio = toggleCreatorStudio;
+
+    // Trigger 1: Keyboard Shortcuts (Ctrl+Shift+E, Cmd+Shift+E, Ctrl+E, Alt+E, Shift+E)
     document.addEventListener('keydown', (e) => {
-        const isKeyE = (e.key && e.key.toLowerCase() === 'e') || e.code === 'KeyE' || e.keyCode === 69;
-        const hasModifier = (e.ctrlKey || e.metaKey || e.altKey) && e.shiftKey;
-        if (hasModifier && isKeyE) {
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+
+        const key = e.key ? e.key.toLowerCase() : '';
+        const isE = key === 'e' || e.code === 'KeyE' || e.keyCode === 69;
+
+        if (isE && (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey)) {
             e.preventDefault();
             e.stopPropagation();
-            const trigger = document.querySelector('.creator-trigger-wrapper');
-            if (trigger) {
-                trigger.style.display = 'block';
-                trigger.style.visibility = 'visible';
-                trigger.classList.remove('hidden');
-            }
-            if (typeof showPasscodeModal === 'function') {
-                showPasscodeModal();
-            }
+            toggleCreatorStudio();
         }
     });
 
