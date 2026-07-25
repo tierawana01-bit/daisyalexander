@@ -10,8 +10,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Pinyon+Script&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Stylesheet with Cache Buster -->
+    <link rel="stylesheet" href="style.css?v=20260725_v200">
+    <style>
+        .creator-trigger-wrapper { display: none !important; }
+    </style>
+    <script>
+        (function() {
+            try {
+                var p = new URLSearchParams(window.location.search);
+                if (p.has('edit') || p.has('key') || p.get('edit') === 'true') {
+                    document.write('<style>.creator-trigger-wrapper { display: block !important; }</style>');
+                }
+            } catch(e) {}
+        })();
+    </script>
 </head>
 <body>
     <!-- Floating Page Decorations Layer -->
@@ -1078,7 +1091,7 @@ function doPost(e) {
     </div>
 
     <!-- JavaScript Configuration & App Logic -->
-    <script src="config.js?v=20260724_v190"></script>
-    <script src="app.js?v=20260724_v190"></script>
+    <script src="config.js?v=20260725_v200"></script>
+    <script src="app.js?v=20260725_v200"></script>
 </body>
 </html>
