@@ -3346,15 +3346,21 @@ window.weddingConfig = ${JSON.stringify(exportObj, null, 4)};
         footerHashtag.style.cursor = 'pointer';
     }
 
-    // ── Secret URL key auto-open (ONLY opens when ?key=... is present in URL) ──
+    // ── Secret URL key/mode auto-open (opens when ?edit=true, ?edit, ?key=... is present in URL) ──
     var params = new URLSearchParams(window.location.search);
-    var secretKey = params.get('key');
-    var isKeyUnlocked = secretKey && (secretKey === 'daisy2026' || secretKey === '1234' || secretKey === 'daisy' || secretKey === 'alexander');
+    var isEditMode = params.has('edit') || params.has('key') || params.get('edit') === 'true' || params.get('mode') === 'edit';
 
-    if (isKeyUnlocked) {
-        if (typeof openCreatorStudioSidebar === 'function') {
-            openCreatorStudioSidebar();
+    if (isEditMode) {
+        var trigger = document.querySelector('.creator-trigger-wrapper');
+        if (trigger) {
+            trigger.style.display = 'block';
+            trigger.classList.remove('hidden');
         }
+        setTimeout(function() {
+            if (typeof openCreatorStudioSidebar === 'function') {
+                openCreatorStudioSidebar();
+            }
+        }, 150);
     }
 
     // ── Secret long-press on bouquet image (3 seconds) — works on mobile ───
