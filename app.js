@@ -1435,8 +1435,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             sidebar.setAttribute('style', 'display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; transform: translateX(100%) !important;');
         }
         if (trigger) {
-            trigger.style.display = 'block';
-            trigger.classList.remove('hidden');
+            const urlParams = new URLSearchParams(window.location.search);
+            const showEditBtn = urlParams.has('edit') || urlParams.has('key') || urlParams.get('edit') === 'true' || urlParams.get('mode') === 'edit';
+            if (showEditBtn) {
+                trigger.style.display = 'block';
+                trigger.classList.remove('hidden');
+            } else {
+                trigger.style.display = 'none';
+                trigger.classList.add('hidden');
+            }
         }
         document.body.classList.remove('editing-mode');
         if (typeof makeTextElementsEditable === 'function') {
